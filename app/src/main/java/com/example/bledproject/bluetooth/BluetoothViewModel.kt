@@ -211,7 +211,6 @@ class BluetoothViewModel(
 		Log.d("BluetoothViewModel", "Setting value for $parameter: $value")
 		writeCharacteristic("SET $parameter $value")
 	}
-
 	fun writeCharacteristic(message: String) {
 		val characteristic = writeCharacteristic ?: run {
 			Log.e("BluetoothViewModel", "Write characteristic not found")
@@ -227,13 +226,23 @@ class BluetoothViewModel(
 		}
 
 		try {
-			characteristic.value = message.toByteArray(Charsets.UTF_8)
-			val writeSuccess = thisGatt?.writeCharacteristic(characteristic) ?: false
-			Log.d("BluetoothViewModel", "Write attempt: $message, success: $writeSuccess")
+			// Extract the numeric value from the message (e.g., "SET current 15" -> "15")
+			val numericValue = message.split(" ").lastOrNull()
+
+			// Check if the numeric value exists and is a valid number
+			if (numericValue != null && numericValue.toIntOrNull() != null) {
+				// Send the numeric value as a byte array
+				characteristic.value = numericValue.toByteArray(Charsets.UTF_8)
+				val writeSuccess = thisGatt?.writeCharacteristic(characteristic) ?: false
+				Log.d("BluetoothViewModel", "Write attempt: $numericValue, success: $writeSuccess")
+			} else {
+				Log.e("BluetoothViewModel", "Invalid numeric value in message: $message")
+			}
 		} catch (e: Exception) {
 			Log.e("BluetoothViewModel", "Error writing characteristic", e)
 		}
 	}
+
 
 	fun startScan() {
 		scanning.value = true
