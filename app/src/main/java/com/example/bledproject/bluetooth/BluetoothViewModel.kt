@@ -35,8 +35,11 @@ class BluetoothViewModel(
 	val scanning = mutableStateOf(false)
 	val context = myContext
 
-	// UUIDs for BLE
-	private val CHARACTERISTIC_READ_UUID = UUID.fromString("0000FFA2-0000-1000-8000-00805F9B34FB")
+	// UUIDs for BLE characteristics (Current, Voltage, Frequency)
+	private val CHARACTERISTIC_READ_CURRENT_UUID = UUID.fromString("0000FFA2-0000-1000-8000-00805F9B34FB")
+	private val CHARACTERISTIC_READ_VOLTAGE_UUID = UUID.fromString("0000FFB2-0000-1000-8000-00805F9B34FB")
+	private val CHARACTERISTIC_READ_FREQUENCY_UUID = UUID.fromString("0000FFC2-0000-1000-8000-00805F9B34FB")
+
 	private val CHARACTERISTIC_WRITE_UUID = UUID.fromString("0000FFA1-0000-1000-8000-00805F9B34FB")
 	private val DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
@@ -49,6 +52,8 @@ class BluetoothViewModel(
 	// Value state
 	var receivedData = mutableStateOf("")
 	var currentValue = mutableStateOf("0")
+	var voltageValue = mutableStateOf("0")
+	var frequencyValue = mutableStateOf("0")
 
 	var thisGatt: BluetoothGatt? = null
 	var writeCharacteristic: BluetoothGattCharacteristic? = null
@@ -109,17 +114,21 @@ class BluetoothViewModel(
 					Log.d("GattCallback", "Service: ${service.uuid}")
 					service.characteristics.forEach { characteristic ->
 						when (characteristic.uuid) {
-							CHARACTERISTIC_READ_UUID -> {
-								Log.d("GattCallback", "Found read characteristic")
-								setupReadCharacteristic(gatt, characteristic)
+							CHARACTERISTIC_READ_CURRENT_UUID -> {
+								Log.d("GattCallback", "Found current read characteristic")
+								setupReadCharacteristic(gatt, characteristic, "current")
+							}
+							CHARACTERISTIC_READ_VOLTAGE_UUID -> {
+								Log.d("GattCallback", "Found voltage read characteristic")
+								setupReadCharacteristic(gatt, characteristic, "voltage")
+							}
+							CHARACTERISTIC_READ_FREQUENCY_UUID -> {
+								Log.d("GattCallback", "Found frequency read characteristic")
+								setupReadCharacteristic(gatt, characteristic, "frequency")
 							}
 							CHARACTERISTIC_WRITE_UUID -> {
 								Log.d("GattCallback", "Found write characteristic")
 								writeCharacteristic = characteristic
-								// Request initial value after connection
-								android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-									getValue()
-								}, 500)
 							}
 						}
 					}
@@ -134,20 +143,21 @@ class BluetoothViewModel(
 			characteristic: BluetoothGattCharacteristic,
 			value: ByteArray
 		) {
-			if (characteristic.uuid == CHARACTERISTIC_READ_UUID) {
-				try {
-					val readValue = String(value, Charsets.UTF_8).trim()
-					Log.d("BluetoothScreen", "Received: $readValue")
-
-					if (readValue.startsWith("Value:")) {
-						currentValue.value = readValue.substringAfter("Value:").trim()
-						Log.d("BluetoothScreen", "Parsed value: ${currentValue.value}")
-					}
-
-					receivedData.value = readValue
-					messageHandler(readValue)
-				} catch (e: Exception) {
-					Log.e("BluetoothScreen", "Error parsing received data", e)
+			when (characteristic.uuid) {
+				CHARACTERISTIC_READ_CURRENT_UUID -> {
+					currentValue.value = String(value, Charsets.UTF_8).trim()
+					Log.d("BluetoothScreen", "Received current: $currentValue")
+					messageHandler(currentValue.value)
+				}
+				CHARACTERISTIC_READ_VOLTAGE_UUID -> {
+					voltageValue.value = String(value, Charsets.UTF_8).trim()
+					Log.d("BluetoothScreen", "Received voltage: $voltageValue")
+					messageHandler(voltageValue.value)
+				}
+				CHARACTERISTIC_READ_FREQUENCY_UUID -> {
+					frequencyValue.value = String(value, Charsets.UTF_8).trim()
+					Log.d("BluetoothScreen", "Received frequency: $frequencyValue")
+					messageHandler(frequencyValue.value)
 				}
 			}
 		}
@@ -165,7 +175,7 @@ class BluetoothViewModel(
 		}
 	}
 
-	private fun setupReadCharacteristic(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+	private fun setupReadCharacteristic(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, parameter: String) {
 		if (ActivityCompat.checkSelfPermission(
 				context,
 				Manifest.permission.BLUETOOTH_CONNECT
@@ -173,6 +183,7 @@ class BluetoothViewModel(
 		) {
 			return
 		}
+
 
 		// Enable notifications
 		val notifyResult = gatt.setCharacteristicNotification(characteristic, true)
@@ -185,22 +196,21 @@ class BluetoothViewModel(
 			return
 		}
 
-		// Write descriptor
+		// Write descriptor to enable notifications
 		descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
 		val writeResult = gatt.writeDescriptor(descriptor)
 		Log.d("GattCallback", "Write descriptor result: $writeResult")
 	}
 
-	fun getValue() {
-		Log.d("BluetoothViewModel", "Getting value...")
-		writeCharacteristic("GET")
+	fun getValue(parameter: String) {
+		Log.d("BluetoothViewModel", "Getting value for $parameter...")
+		writeCharacteristic("GET $parameter")
 	}
 
-	fun setValue(value: String) {
-		Log.d("BluetoothViewModel", "Setting value: $value")
-		writeCharacteristic("SET $value")
+	fun setValue(parameter: String, value: String) {
+		Log.d("BluetoothViewModel", "Setting value for $parameter: $value")
+		writeCharacteristic("SET $parameter $value")
 	}
-
 	fun writeCharacteristic(message: String) {
 		val characteristic = writeCharacteristic ?: run {
 			Log.e("BluetoothViewModel", "Write characteristic not found")
@@ -216,13 +226,23 @@ class BluetoothViewModel(
 		}
 
 		try {
-			characteristic.value = message.toByteArray(Charsets.UTF_8)
-			val writeSuccess = thisGatt?.writeCharacteristic(characteristic) ?: false
-			Log.d("BluetoothViewModel", "Write attempt: $message, success: $writeSuccess")
+			// Extract the numeric value from the message (e.g., "SET current 15" -> "15")
+			val numericValue = message.split(" ").lastOrNull()
+
+			// Check if the numeric value exists and is a valid number
+			if (numericValue != null && numericValue.toIntOrNull() != null) {
+				// Send the numeric value as a byte array
+				characteristic.value = numericValue.toByteArray(Charsets.UTF_8)
+				val writeSuccess = thisGatt?.writeCharacteristic(characteristic) ?: false
+				Log.d("BluetoothViewModel", "Write attempt: $numericValue, success: $writeSuccess")
+			} else {
+				Log.e("BluetoothViewModel", "Invalid numeric value in message: $message")
+			}
 		} catch (e: Exception) {
 			Log.e("BluetoothViewModel", "Error writing characteristic", e)
 		}
 	}
+
 
 	fun startScan() {
 		scanning.value = true
@@ -274,6 +294,7 @@ class BluetoothViewModel(
 		) {
 			return
 		}
+
 		manuallyDisconnected.value = true
 		thisGatt?.disconnect()
 	}

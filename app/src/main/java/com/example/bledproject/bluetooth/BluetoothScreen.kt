@@ -19,6 +19,7 @@ import androidx.core.app.ActivityCompat
 @Composable
 fun BluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 	var inputValue by remember { mutableStateOf("") }
+	var selectedParameter by remember { mutableStateOf("current") } // Default parameter
 	val context = LocalContext.current
 
 	// Show toast when connected
@@ -139,26 +140,50 @@ fun BluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 				Column(
 					modifier = Modifier.padding(16.dp)
 				) {
+					// Current values display
 					Text(
-						text = "Current Value: ${bluetoothViewModel.currentValue.value}",
+						text = "Current Values:",
 						style = MaterialTheme.typography.titleMedium
 					)
+					Text(text = "Current: ${bluetoothViewModel.currentValue.value}")
+					Text(text = "Voltage: ${bluetoothViewModel.voltageValue.value}")
+					Text(text = "Frequency: ${bluetoothViewModel.frequencyValue.value}")
 
 					Spacer(modifier = Modifier.height(16.dp))
 
-					Button(
+					// Parameter selection
+					Row(
 						modifier = Modifier.fillMaxWidth(),
-						onClick = { bluetoothViewModel.getValue() }
+						horizontalArrangement = Arrangement.SpaceEvenly
 					) {
-						Text("Refresh Value")
+						Button(onClick = { selectedParameter = "current" }) {
+							Text("Current")
+						}
+						Button(onClick = { selectedParameter = "voltage" }) {
+							Text("Voltage")
+						}
+						Button(onClick = { selectedParameter = "frequency" }) {
+							Text("Frequency")
+						}
 					}
 
 					Spacer(modifier = Modifier.height(16.dp))
 
+					// Get value button
+					Button(
+						modifier = Modifier.fillMaxWidth(),
+						onClick = { bluetoothViewModel.getValue(selectedParameter) }
+					) {
+						Text("Get ${selectedParameter.capitalize()}")
+					}
+
+					Spacer(modifier = Modifier.height(16.dp))
+
+					// Set value controls
 					OutlinedTextField(
 						value = inputValue,
 						onValueChange = { inputValue = it },
-						label = { Text("New Value") },
+						label = { Text("New ${selectedParameter.capitalize()} Value") },
 						keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
 						modifier = Modifier.fillMaxWidth()
 					)
@@ -169,12 +194,12 @@ fun BluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 						modifier = Modifier.fillMaxWidth(),
 						onClick = {
 							if (inputValue.isNotEmpty()) {
-								bluetoothViewModel.setValue(inputValue)
-								inputValue = ""
+								bluetoothViewModel.setValue(selectedParameter, inputValue)
+								inputValue = "" // Clear the input field
 							}
 						}
 					) {
-						Text("Set Value")
+						Text("Set ${selectedParameter.capitalize()}")
 					}
 
 					// Last received data
