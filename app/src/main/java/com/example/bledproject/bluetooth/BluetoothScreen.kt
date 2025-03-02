@@ -148,6 +148,11 @@ fun BluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 					Text(text = "Current: ${bluetoothViewModel.currentValue.value}")
 					Text(text = "Voltage: ${bluetoothViewModel.voltageValue.value}")
 					Text(text = "Frequency: ${bluetoothViewModel.frequencyValue.value}")
+					// Add this after the other Text lines in the "Current Values:" section
+					Text(text = "Audio Frequency L: ${bluetoothViewModel.audioFrequencyLValue.value}")
+					Text(text = "Audio Frequency R: ${bluetoothViewModel.audioFrequencyRValue.value}")
+					Text(text = "Audio Intensity L: ${bluetoothViewModel.audioIntensityLValue.value}")
+					Text(text = "Audio Intensity R: ${bluetoothViewModel.audioIntensityRValue.value}")
 
 					Spacer(modifier = Modifier.height(16.dp))
 
