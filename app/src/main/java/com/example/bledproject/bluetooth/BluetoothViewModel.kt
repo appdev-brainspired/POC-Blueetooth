@@ -42,6 +42,11 @@ class BluetoothViewModel(
 
 	private val CHARACTERISTIC_WRITE_UUID = UUID.fromString("0000FFA1-0000-1000-8000-00805F9B34FB")
 	private val DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+	// Add these UUIDs near the other UUID declarations
+	private val CHARACTERISTIC_READ_AUDIO_FREQ_L_UUID = UUID.fromString("0000FFD1-0000-1000-8000-00805F9B34FB")
+	private val CHARACTERISTIC_READ_AUDIO_FREQ_R_UUID = UUID.fromString("0000FFD2-0000-1000-8000-00805F9B34FB")
+	private val CHARACTERISTIC_READ_AUDIO_INTENSITY_L_UUID = UUID.fromString("0000FFE1-0000-1000-8000-00805F9B34FB")
+	private val CHARACTERISTIC_READ_AUDIO_INTENSITY_R_UUID = UUID.fromString("0000FFE2-0000-1000-8000-00805F9B34FB")
 
 	private val manuallyDisconnected = mutableStateOf(false)
 
@@ -54,6 +59,13 @@ class BluetoothViewModel(
 	var currentValue = mutableStateOf("0")
 	var voltageValue = mutableStateOf("0")
 	var frequencyValue = mutableStateOf("0")
+
+
+	// Add these state variables near the other value state declarations
+	var audioFrequencyLValue = mutableStateOf("0")
+	var audioFrequencyRValue = mutableStateOf("0")
+	var audioIntensityLValue = mutableStateOf("0")
+	var audioIntensityRValue = mutableStateOf("0")
 
 	var thisGatt: BluetoothGatt? = null
 	var writeCharacteristic: BluetoothGattCharacteristic? = null
@@ -130,6 +142,23 @@ class BluetoothViewModel(
 								Log.d("GattCallback", "Found write characteristic")
 								writeCharacteristic = characteristic
 							}
+							// Add these cases to the when block in onServicesDiscovered
+							CHARACTERISTIC_READ_AUDIO_FREQ_L_UUID -> {
+								Log.d("GattCallback", "Found audio frequency L read characteristic")
+								setupReadCharacteristic(gatt, characteristic, "audio_freq_l")
+							}
+							CHARACTERISTIC_READ_AUDIO_FREQ_R_UUID -> {
+								Log.d("GattCallback", "Found audio frequency R read characteristic")
+								setupReadCharacteristic(gatt, characteristic, "audio_freq_r")
+							}
+							CHARACTERISTIC_READ_AUDIO_INTENSITY_L_UUID -> {
+								Log.d("GattCallback", "Found audio intensity L read characteristic")
+								setupReadCharacteristic(gatt, characteristic, "audio_intensity_l")
+							}
+							CHARACTERISTIC_READ_AUDIO_INTENSITY_R_UUID -> {
+								Log.d("GattCallback", "Found audio intensity R read characteristic")
+								setupReadCharacteristic(gatt, characteristic, "audio_intensity_r")
+							}
 						}
 					}
 				}
@@ -158,6 +187,27 @@ class BluetoothViewModel(
 					frequencyValue.value = String(value, Charsets.UTF_8).trim()
 					Log.d("BluetoothScreen", "Received frequency: $frequencyValue")
 					messageHandler(frequencyValue.value)
+				}
+				// Add these cases to the when block in onCharacteristicChanged
+				CHARACTERISTIC_READ_AUDIO_FREQ_L_UUID -> {
+					audioFrequencyLValue.value = String(value, Charsets.UTF_8).trim()
+					Log.d("BluetoothScreen", "Received audio frequency L: ${audioFrequencyLValue.value}")
+					messageHandler(audioFrequencyLValue.value)
+				}
+				CHARACTERISTIC_READ_AUDIO_FREQ_R_UUID -> {
+					audioFrequencyRValue.value = String(value, Charsets.UTF_8).trim()
+					Log.d("BluetoothScreen", "Received audio frequency R: ${audioFrequencyRValue.value}")
+					messageHandler(audioFrequencyRValue.value)
+				}
+				CHARACTERISTIC_READ_AUDIO_INTENSITY_L_UUID -> {
+					audioIntensityLValue.value = String(value, Charsets.UTF_8).trim()
+					Log.d("BluetoothScreen", "Received audio intensity L: ${audioIntensityLValue.value}")
+					messageHandler(audioIntensityLValue.value)
+				}
+				CHARACTERISTIC_READ_AUDIO_INTENSITY_R_UUID -> {
+					audioIntensityRValue.value = String(value, Charsets.UTF_8).trim()
+					Log.d("BluetoothScreen", "Received audio intensity R: ${audioIntensityRValue.value}")
+					messageHandler(audioIntensityRValue.value)
 				}
 			}
 		}
