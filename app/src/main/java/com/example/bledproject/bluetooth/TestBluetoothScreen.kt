@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
+import kotlin.math.abs
 
 @Composable
 fun FrequencyPresetButton(
@@ -158,6 +159,13 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 
 	var selectedPreset by remember { mutableStateOf("") }
 
+	// Audio section state variables
+	var audioFrequencyL by remember { mutableStateOf("0") }
+	var audioFrequencyR by remember { mutableStateOf("0") }
+	var audioIntensityL by remember { mutableStateOf("0") }
+	var audioIntensityR by remember { mutableStateOf("0") }
+	var audioIntensityC by remember { mutableStateOf("") }
+
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
@@ -203,11 +211,23 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 
 		Spacer(modifier = Modifier.height(8.dp))
 
+		// Use LazyColumn for the entire scrollable content
 		LazyColumn(
 			modifier = Modifier
-				.weight(1f)
 				.fillMaxWidth()
+				.weight(1f)
 		) {
+			// Display bluetooth devices
+			item {
+				Text(
+					text = "Available Devices",
+					fontSize = 16.sp,
+					fontWeight = FontWeight.Bold,
+					color = Color(0xFF1E88E5),
+					modifier = Modifier.padding(vertical = 4.dp)
+				)
+			}
+
 			items(bluetoothViewModel.devices.toList()) { device ->
 				if (ActivityCompat.checkSelfPermission(
 						bluetoothViewModel.context,
@@ -244,128 +264,419 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 					}
 				}
 			}
-		}
 
-		if (bluetoothViewModel.connected.value) {
-			Card(
-				modifier = Modifier.fillMaxWidth(),
-				colors = CardDefaults.cardColors(containerColor = Color.White)
-			) {
-				Column(
-					modifier = Modifier.padding(8.dp)
-				) {
-					Text(
-						text = "Connected to: ${bluetoothViewModel.connectedDevice.value}",
-						fontSize = 16.sp,
-						fontWeight = FontWeight.Bold,
-						color = Color(0xFF43A047)
-					)
-
+			// Display controls when connected
+			if (bluetoothViewModel.connected.value) {
+				item {
 					Spacer(modifier = Modifier.height(8.dp))
 
-					// Frequency preset buttons in a single row
-					Row(
+					Card(
 						modifier = Modifier.fillMaxWidth(),
-						horizontalArrangement = Arrangement.SpaceEvenly
+						colors = CardDefaults.cardColors(containerColor = Color.White)
 					) {
-						FrequencyPresetButton(
-							text = "Theta",
-							isSelected = selectedPreset == "theta",
-							onClick = {
-								frequencyValue = "4"
-								selectedPreset = "theta"
-								bluetoothViewModel.writeCharacteristic("SET FREQUENCY 6")
-								frequencySet = "4"
+						Column(
+							modifier = Modifier.padding(8.dp)
+						) {
+							Text(
+								text = "Connected to: ${bluetoothViewModel.connectedDevice.value}",
+								fontSize = 16.sp,
+								fontWeight = FontWeight.Bold,
+								color = Color(0xFF43A047)
+							)
+
+							Spacer(modifier = Modifier.height(8.dp))
+
+							// Frequency preset buttons in a single row
+							Row(
+								modifier = Modifier.fillMaxWidth(),
+								horizontalArrangement = Arrangement.SpaceEvenly
+							) {
+								FrequencyPresetButton(
+									text = "Theta",
+									isSelected = selectedPreset == "theta",
+									onClick = {
+										frequencyValue = "4"
+										selectedPreset = "theta"
+										bluetoothViewModel.writeCharacteristic("SET FREQUENCY 6")
+										frequencySet = "4"
+									}
+								)
+								FrequencyPresetButton(
+									text = "Alpha",
+									isSelected = selectedPreset == "alpha",
+									onClick = {
+										frequencyValue = "8"
+										selectedPreset = "alpha"
+										bluetoothViewModel.writeCharacteristic("SET FREQUENCY 10")
+										frequencySet = "8"
+									}
+								)
+								FrequencyPresetButton(
+									text = "Beta",
+									isSelected = selectedPreset == "beta",
+									onClick = {
+										frequencyValue = "13"
+										selectedPreset = "beta"
+										bluetoothViewModel.writeCharacteristic("SET FREQUENCY 20")
+										frequencySet = "13"
+									}
+								)
 							}
-						)
-						FrequencyPresetButton(
-							text = "Alpha",
-							isSelected = selectedPreset == "alpha",
-							onClick = {
-								frequencyValue = "8"
-								selectedPreset = "alpha"
-								bluetoothViewModel.writeCharacteristic("SET FREQUENCY 10")
-								frequencySet = "8"
+
+							Spacer(modifier = Modifier.height(16.dp))
+
+							AdjustableValueRow(
+								label = "Current",
+								value = currentValue,
+								onValueChange = { currentValue = it },
+								onGet = { bluetoothViewModel.writeCharacteristic("GET CURRENT") },
+								onSet = {
+									bluetoothViewModel.writeCharacteristic("SET CURRENT $currentValue")
+									currentSet = currentValue
+								},
+								onIncrement = {
+									currentValue = (currentValue.toFloat() + currentStepSize.toFloat()).toString()
+								},
+								onDecrement = {
+									currentValue = (currentValue.toFloat() - currentStepSize.toFloat()).toString()
+								},
+								currentValue = currentSet,
+								stepSize = currentStepSize,
+								onStepSizeChange = { currentStepSize = it }
+							)
+
+							AdjustableValueRow(
+								label = "Voltage",
+								value = voltageValue,
+								onValueChange = { voltageValue = it },
+								onGet = { bluetoothViewModel.writeCharacteristic("GET VOLTAGE") },
+								onSet = {
+									bluetoothViewModel.writeCharacteristic("SET VOLTAGE $voltageValue")
+									voltageSet = voltageValue
+								},
+								onIncrement = {
+									voltageValue = (voltageValue.toFloat() + voltageStepSize.toFloat()).toString()
+								},
+								onDecrement = {
+									voltageValue = (voltageValue.toFloat() - voltageStepSize.toFloat()).toString()
+								},
+								currentValue = voltageSet,
+								stepSize = voltageStepSize,
+								onStepSizeChange = { voltageStepSize = it }
+							)
+
+							AdjustableValueRow(
+								label = "Frequency",
+								value = frequencyValue,
+								onValueChange = {
+									frequencyValue = it
+									selectedPreset = ""
+								},
+								onGet = { bluetoothViewModel.writeCharacteristic("GET FREQUENCY") },
+								onSet = {
+									bluetoothViewModel.writeCharacteristic("SET FREQUENCY $frequencyValue")
+									frequencySet = frequencyValue
+								},
+								onIncrement = {
+									frequencyValue = (frequencyValue.toFloat() + frequencyStepSize.toFloat()).toString()
+									selectedPreset = ""
+								},
+								onDecrement = {
+									frequencyValue = (frequencyValue.toFloat() - frequencyStepSize.toFloat()).toString()
+									selectedPreset = ""
+								},
+								currentValue = frequencySet,
+								stepSize = frequencyStepSize,
+								onStepSizeChange = { frequencyStepSize = it }
+							)
+
+							// Audio Section Title
+							Spacer(modifier = Modifier.height(16.dp))
+							Text(
+								text = "Audio Section",
+								fontSize = 16.sp,
+								fontWeight = FontWeight.Bold,
+								color = Color(0xFF1E88E5)
+							)
+
+							Spacer(modifier = Modifier.height(8.dp))
+
+							// Audio Frequency Section
+							Card(
+								modifier = Modifier
+									.fillMaxWidth()
+									.padding(4.dp),
+								colors = CardDefaults.cardColors(containerColor = Color(0xFF1E88E5))
+							) {
+								Column(
+									modifier = Modifier
+										.padding(8.dp)
+										.fillMaxWidth()
+								) {
+									Text(
+										text = "Frequency",
+										color = Color.White,
+										fontSize = 16.sp,
+										fontWeight = FontWeight.Bold
+									)
+
+									Spacer(modifier = Modifier.height(4.dp))
+
+									Row(
+										modifier = Modifier.fillMaxWidth(),
+										horizontalArrangement = Arrangement.spacedBy(4.dp)
+									) {
+										// L field
+										Column(modifier = Modifier.weight(1f)) {
+											Text("L", color = Color.White)
+											TextField(
+												value = audioFrequencyL,
+												onValueChange = { audioFrequencyL = it },
+												colors = TextFieldDefaults.colors(
+													focusedContainerColor = Color(0xFF1565C0),
+													unfocusedContainerColor = Color(0xFF1565C0),
+													focusedTextColor = if (audioFrequencyL.toFloatOrNull() ?: 0f > audioFrequencyR.toFloatOrNull() ?: 0f) Color.Red else Color.White,
+													unfocusedTextColor = if (audioFrequencyL.toFloatOrNull() ?: 0f > audioFrequencyR.toFloatOrNull() ?: 0f) Color.Red else Color.White
+												),
+												modifier = Modifier.fillMaxWidth()
+											)
+											Row(
+												modifier = Modifier.fillMaxWidth(),
+												horizontalArrangement = Arrangement.SpaceEvenly
+											) {
+												Button(
+													onClick = {
+														val current = audioFrequencyL.toFloatOrNull() ?: 0f
+														audioFrequencyL = (current + 1).toString()
+													},
+													colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+												) {
+													Text("+", color = Color(0xFF1E88E5))
+												}
+												Button(
+													onClick = {
+														val current = audioFrequencyL.toFloatOrNull() ?: 0f
+														audioFrequencyL = (current - 1).toString()
+													},
+													colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+												) {
+													Text("-", color = Color(0xFF1E88E5))
+												}
+											}
+										}
+
+										// R field
+										Column(modifier = Modifier.weight(1f)) {
+											Text("R", color = Color.White)
+											TextField(
+												value = audioFrequencyR,
+												onValueChange = { audioFrequencyR = it },
+												colors = TextFieldDefaults.colors(
+													focusedContainerColor = Color(0xFF1565C0),
+													unfocusedContainerColor = Color(0xFF1565C0),
+													focusedTextColor = if (audioFrequencyR.toFloatOrNull() ?: 0f > audioFrequencyL.toFloatOrNull() ?: 0f) Color.Red else Color.White,
+													unfocusedTextColor = if (audioFrequencyR.toFloatOrNull() ?: 0f > audioFrequencyL.toFloatOrNull() ?: 0f) Color.Red else Color.White
+												),
+												modifier = Modifier.fillMaxWidth()
+											)
+											Row(
+												modifier = Modifier.fillMaxWidth(),
+												horizontalArrangement = Arrangement.SpaceEvenly
+											) {
+												Button(
+													onClick = {
+														val current = audioFrequencyR.toFloatOrNull() ?: 0f
+														audioFrequencyR = (current + 1).toString()
+													},
+													colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+												) {
+													Text("+", color = Color(0xFF1E88E5))
+												}
+												Button(
+													onClick = {
+														val current = audioFrequencyR.toFloatOrNull() ?: 0f
+														audioFrequencyR = (current - 1).toString()
+													},
+													colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+												) {
+													Text("-", color = Color(0xFF1E88E5))
+												}
+											}
+										}
+									}
+
+									// Difference display
+									Spacer(modifier = Modifier.height(8.dp))
+									val freqDiff = abs((audioFrequencyL.toFloatOrNull() ?: 0f) - (audioFrequencyR.toFloatOrNull() ?: 0f))
+									Text(
+										text = "Difference: |L - R| = $freqDiff",
+										color = Color.White,
+										fontSize = 14.sp
+									)
+								}
 							}
-						)
-						FrequencyPresetButton(
-							text = "Beta",
-							isSelected = selectedPreset == "beta",
-							onClick = {
-								frequencyValue = "13"
-								selectedPreset = "beta"
-								bluetoothViewModel.writeCharacteristic("SET FREQUENCY 20")
-								frequencySet = "13"
+
+							// Audio Intensity Section
+							Card(
+								modifier = Modifier
+									.fillMaxWidth()
+									.padding(4.dp),
+								colors = CardDefaults.cardColors(containerColor = Color(0xFF1E88E5))
+							) {
+								Column(
+									modifier = Modifier
+										.padding(8.dp)
+										.fillMaxWidth()
+								) {
+									Text(
+										text = "Intensity",
+										color = Color.White,
+										fontSize = 16.sp,
+										fontWeight = FontWeight.Bold
+									)
+
+									Spacer(modifier = Modifier.height(4.dp))
+
+									// Special C input field
+									Row(
+										modifier = Modifier.fillMaxWidth(),
+										horizontalArrangement = Arrangement.spacedBy(4.dp)
+									) {
+										Column(modifier = Modifier.fillMaxWidth()) {
+											Text("C (Sets both L and R)", color = Color.White)
+											TextField(
+												value = audioIntensityC,
+												onValueChange = {
+													audioIntensityC = it
+													if (it.isNotEmpty()) {
+														audioIntensityL = it
+														audioIntensityR = it
+													}
+												},
+												colors = TextFieldDefaults.colors(
+													focusedContainerColor = Color(0xFF1565C0),
+													unfocusedContainerColor = Color(0xFF1565C0),
+													focusedTextColor = Color.White,
+													unfocusedTextColor = Color.White
+												),
+												modifier = Modifier.fillMaxWidth()
+											)
+										}
+									}
+
+									Spacer(modifier = Modifier.height(8.dp))
+
+									Row(
+										modifier = Modifier.fillMaxWidth(),
+										horizontalArrangement = Arrangement.spacedBy(4.dp)
+									) {
+										// L field
+										Column(modifier = Modifier.weight(1f)) {
+											Text("L", color = Color.White)
+											TextField(
+												value = audioIntensityL,
+												onValueChange = { audioIntensityL = it },
+												colors = TextFieldDefaults.colors(
+													focusedContainerColor = Color(0xFF1565C0),
+													unfocusedContainerColor = Color(0xFF1565C0),
+													focusedTextColor = if (audioIntensityL.toFloatOrNull() ?: 0f > audioIntensityR.toFloatOrNull() ?: 0f) Color.Red else Color.White,
+													unfocusedTextColor = if (audioIntensityL.toFloatOrNull() ?: 0f > audioIntensityR.toFloatOrNull() ?: 0f) Color.Red else Color.White
+												),
+												modifier = Modifier.fillMaxWidth()
+											)
+											Row(
+												modifier = Modifier.fillMaxWidth(),
+												horizontalArrangement = Arrangement.SpaceEvenly
+											) {
+												Button(
+													onClick = {
+														val current = audioIntensityL.toFloatOrNull() ?: 0f
+														audioIntensityL = (current + 1).toString()
+													},
+													colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+												) {
+													Text("+", color = Color(0xFF1E88E5))
+												}
+												Button(
+													onClick = {
+														val current = audioIntensityL.toFloatOrNull() ?: 0f
+														audioIntensityL = (current - 1).toString()
+													},
+													colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+												) {
+													Text("-", color = Color(0xFF1E88E5))
+												}
+											}
+										}
+
+										// R field
+										Column(modifier = Modifier.weight(1f)) {
+											Text("R", color = Color.White)
+											TextField(
+												value = audioIntensityR,
+												onValueChange = { audioIntensityR = it },
+												colors = TextFieldDefaults.colors(
+													focusedContainerColor = Color(0xFF1565C0),
+													unfocusedContainerColor = Color(0xFF1565C0),
+													focusedTextColor = if (audioIntensityR.toFloatOrNull() ?: 0f > audioIntensityL.toFloatOrNull() ?: 0f) Color.Red else Color.White,
+													unfocusedTextColor = if (audioIntensityR.toFloatOrNull() ?: 0f > audioIntensityL.toFloatOrNull() ?: 0f) Color.Red else Color.White
+												),
+												modifier = Modifier.fillMaxWidth()
+											)
+											Row(
+												modifier = Modifier.fillMaxWidth(),
+												horizontalArrangement = Arrangement.SpaceEvenly
+											) {
+												Button(
+													onClick = {
+														val current = audioIntensityR.toFloatOrNull() ?: 0f
+														audioIntensityR = (current + 1).toString()
+													},
+													colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+												) {
+													Text("+", color = Color(0xFF1E88E5))
+												}
+												Button(
+													onClick = {
+														val current = audioIntensityR.toFloatOrNull() ?: 0f
+														audioIntensityR = (current - 1).toString()
+													},
+													colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+												) {
+													Text("-", color = Color(0xFF1E88E5))
+												}
+											}
+										}
+									}
+
+									// Difference display
+									Spacer(modifier = Modifier.height(8.dp))
+									val intensityDiff = abs((audioIntensityL.toFloatOrNull() ?: 0f) - (audioIntensityR.toFloatOrNull() ?: 0f))
+									Text(
+										text = "Difference: |L - R| = $intensityDiff",
+										color = Color.White,
+										fontSize = 14.sp
+									)
+
+									// Set button for Audio section
+									Spacer(modifier = Modifier.height(16.dp))
+									Button(
+										onClick = {
+											// Send all audio values to the device
+											bluetoothViewModel.writeCharacteristic("SET AUDIO_FREQ_L ${audioFrequencyL}")
+											bluetoothViewModel.writeCharacteristic("SET AUDIO_FREQ_R ${audioFrequencyR}")
+											bluetoothViewModel.writeCharacteristic("SET AUDIO_INTENSITY_L ${audioIntensityL}")
+											bluetoothViewModel.writeCharacteristic("SET AUDIO_INTENSITY_R ${audioIntensityR}")
+										},
+										colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+										modifier = Modifier.fillMaxWidth()
+									) {
+										Text("Set Audio Values", color = Color(0xFF1E88E5))
+									}
+								}
 							}
-						)
+						}
 					}
-
-					Spacer(modifier = Modifier.height(16.dp))
-
-					AdjustableValueRow(
-						label = "Current",
-						value = currentValue,
-						onValueChange = { currentValue = it },
-						onGet = { bluetoothViewModel.writeCharacteristic("GET CURRENT") },
-						onSet = {
-							bluetoothViewModel.writeCharacteristic("SET CURRENT $currentValue")
-							currentSet = currentValue
-						},
-						onIncrement = {
-							currentValue = (currentValue.toFloat() + currentStepSize.toFloat()).toString()
-						},
-						onDecrement = {
-							currentValue = (currentValue.toFloat() - currentStepSize.toFloat()).toString()
-						},
-						currentValue = currentSet,
-						stepSize = currentStepSize,
-						onStepSizeChange = { currentStepSize = it }
-					)
-
-					AdjustableValueRow(
-						label = "Voltage",
-						value = voltageValue,
-						onValueChange = { voltageValue = it },
-						onGet = { bluetoothViewModel.writeCharacteristic("GET VOLTAGE") },
-						onSet = {
-							bluetoothViewModel.writeCharacteristic("SET VOLTAGE $voltageValue")
-							voltageSet = voltageValue
-						},
-						onIncrement = {
-							voltageValue = (voltageValue.toFloat() + voltageStepSize.toFloat()).toString()
-						},
-						onDecrement = {
-							voltageValue = (voltageValue.toFloat() - voltageStepSize.toFloat()).toString()
-						},
-						currentValue = voltageSet,
-						stepSize = voltageStepSize,
-						onStepSizeChange = { voltageStepSize = it }
-					)
-
-					AdjustableValueRow(
-						label = "Frequency",
-						value = frequencyValue,
-						onValueChange = {
-							frequencyValue = it
-							selectedPreset = ""
-						},
-						onGet = { bluetoothViewModel.writeCharacteristic("GET FREQUENCY") },
-						onSet = {
-							bluetoothViewModel.writeCharacteristic("SET FREQUENCY $frequencyValue")
-							frequencySet = frequencyValue
-						},
-						onIncrement = {
-							frequencyValue = (frequencyValue.toFloat() + frequencyStepSize.toFloat()).toString()
-							selectedPreset = ""
-						},
-						onDecrement = {
-							frequencyValue = (frequencyValue.toFloat() - frequencyStepSize.toFloat()).toString()
-							selectedPreset = ""
-						},
-						currentValue = frequencySet,
-						stepSize = frequencyStepSize,
-						onStepSizeChange = { frequencyStepSize = it }
-					)
 				}
 			}
 		}
