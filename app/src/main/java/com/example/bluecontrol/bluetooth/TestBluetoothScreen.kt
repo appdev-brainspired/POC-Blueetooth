@@ -1,15 +1,24 @@
 package com.example.bluecontrol.bluetooth
 
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,9 +28,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
+import androidx.compose.ui.text.font.FontFamily
+
+
 
 // Custom color scheme
 private val BluetoothPrimary = Color(0xFF3F51B5) // Indigo
@@ -35,23 +48,26 @@ private val BluetoothConnectedContainer = Color(0xFFE8F5E9) // Light Green
 private val BluetoothErrorContainer = Color(0xFFFFEBEE) // Light Red
 private val BluetoothInputContainer = Color(0xFFF0F7FF) // Very Light Blue
 
+
 @Composable
 fun ValueControlRow(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    currentDisplayValue: String
+    currentDisplayValue: String,
+    icon: @Composable () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 6.dp),
         colors = CardDefaults.cardColors(
             containerColor = BluetoothInputContainer
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
-        )
+        ),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -59,12 +75,28 @@ fun ValueControlRow(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Icon with circular background
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(BluetoothPrimary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                icon()
+            }
+
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+
             Text(
                 text = label,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF455A64), // Dark Blue-Gray
-                modifier = Modifier.width(110.dp)
+                modifier = Modifier.width(90.dp)
             )
+
 
             OutlinedTextField(
                 value = value,
@@ -77,21 +109,31 @@ fun ValueControlRow(
                     unfocusedTextColor = Color(0xFF263238), // Very Dark Blue-Gray
                     focusedBorderColor = BluetoothSecondary,
                     unfocusedBorderColor = Color(0xFFBDBDBD) // Gray
-                )
+                ),
+                shape = RoundedCornerShape(10.dp)
             )
 
+
             if (currentDisplayValue.isNotEmpty()) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = currentDisplayValue,
-                    fontWeight = FontWeight.Bold,
-                    color = BluetoothPrimary,
-                    modifier = Modifier.width(60.dp)
-                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = BluetoothPrimary.copy(alpha = 0.1f)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = currentDisplayValue,
+                        fontWeight = FontWeight.Bold,
+                        color = BluetoothPrimary,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,7 +145,9 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
     var rFreqValue by remember { mutableStateOf("") }
     var volumeValue by remember { mutableStateOf("") }
 
+
     val context = LocalContext.current
+
 
     // Show toast when connected
     LaunchedEffect(key1 = bluetoothViewModel.connected.value) {
@@ -122,20 +166,49 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
         }
     }
 
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Bluetooth Control",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Bluetooth,
+                            contentDescription = "Bluetooth Icon",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Bluetooth Control Device",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp,
+                                fontFamily = FontFamily.SansSerif,
+                                        fontSize = 18.sp
+                            ),
+                            color = Color.White,
+                                    modifier = Modifier.align(Alignment.CenterVertically)
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BluetoothPrimary
-                )
+                    containerColor = Color(0xFF303F9F)
+                ),
+                actions = {
+                    IconButton(onClick = { /* Info action */ }) {
+                        Icon(
+                            imageVector = Icons.Filled.Info,
+                            contentDescription = "Info",
+                            tint = Color.White
+                        )
+                    }
+                },
+                modifier = Modifier.height(64.dp)
             )
         },
         containerColor = BluetoothBackground
@@ -160,30 +233,48 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 3.dp
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (bluetoothViewModel.connected.value) "Connected" else "Disconnected",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (bluetoothViewModel.connected.value)
-                            BluetoothConnected
+                    Icon(
+                        imageVector = if (bluetoothViewModel.connected.value)
+                            Icons.Filled.BluetoothConnected
                         else
-                            BluetoothError
+                            Icons.Filled.BluetoothDisabled,
+                        contentDescription = if (bluetoothViewModel.connected.value) "Connected" else "Disconnected",
+                        tint = if (bluetoothViewModel.connected.value) BluetoothConnected else BluetoothError,
+                        modifier = Modifier.size(36.dp)
                     )
-                    if (bluetoothViewModel.connected.value) {
-                        Spacer(modifier = Modifier.height(4.dp))
+
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+
+                    Column {
                         Text(
-                            text = "Device: ${bluetoothViewModel.connectedDevice.value}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF33691E) // Dark Green
+                            text = if (bluetoothViewModel.connected.value) "Connected" else "Disconnected",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (bluetoothViewModel.connected.value)
+                                BluetoothConnected
+                            else
+                                BluetoothError
                         )
+                        if (bluetoothViewModel.connected.value) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Device: ${bluetoothViewModel.connectedDevice.value}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF33691E) // Dark Green
+                            )
+                        }
                     }
                 }
             }
+
 
             // Scan and Disconnect buttons
             Row(
@@ -205,13 +296,24 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                         else
                             BluetoothPrimary
                     ),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     elevation = ButtonDefaults.buttonElevation(
                         defaultElevation = 4.dp
-                    )
+                    ),
+                    contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
-                    Text(if (bluetoothViewModel.scanning.value) "Stop Scan" else "Start Scan")
+                    Icon(
+                        imageVector = if (bluetoothViewModel.scanning.value)
+                            Icons.Filled.Stop
+                        else
+                            Icons.Filled.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = if (bluetoothViewModel.scanning.value) "Stop Scan" else "Start Scan")
                 }
+
 
                 if (bluetoothViewModel.connected.value) {
                     Button(
@@ -220,35 +322,56 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                         colors = ButtonDefaults.buttonColors(
                             containerColor = BluetoothError
                         ),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = 4.dp
-                        )
+                        ),
+                        contentPadding = PaddingValues(vertical = 12.dp)
                     ) {
-                        Text("Disconnect")
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Disconnect")
                     }
                 }
             }
 
+
             Spacer(modifier = Modifier.height(16.dp))
+
 
             // Device List
             if (!bluetoothViewModel.connected.value) {
-                Text(
-                    text = "Available Devices",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF263238), // Very Dark Blue-Gray
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 8.dp)
-                )
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Devices,
+                        contentDescription = "Devices",
+                        tint = Color(0xFF263238),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Available Devices",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF263238) // Very Dark Blue-Gray
+                    )
+                }
+
 
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(Color(0xFFE1F5FE)) // Very Light Blue
-                        .padding(8.dp),
+                        .padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(bluetoothViewModel.devices.toList()) { device ->
@@ -265,7 +388,7 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                                 colors = CardDefaults.cardColors(
                                     containerColor = BluetoothSurface
                                 ),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(10.dp)
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -274,31 +397,50 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
-                                        Text(
-                                            text = device.name ?: "Unnamed device",
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF263238) // Very Dark Blue-Gray
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Bluetooth,
+                                            contentDescription = "Bluetooth Device",
+                                            tint = BluetoothPrimary,
+                                            modifier = Modifier.size(24.dp)
                                         )
-                                        Text(
-                                            text = device.address,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color(0xFF607D8B) // Blue-Gray
-                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = device.name ?: "Unnamed device",
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF263238) // Very Dark Blue-Gray
+                                            )
+                                            Text(
+                                                text = device.address,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color(0xFF607D8B) // Blue-Gray
+                                            )
+                                        }
                                     }
                                     FilledTonalButton(
                                         onClick = { bluetoothViewModel.connectToDevice(device) },
                                         colors = ButtonDefaults.filledTonalButtonColors(
                                             containerColor = BluetoothSecondary,
                                             contentColor = Color.White
-                                        )
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
                                     ) {
-                                        Text("Connect")
+                                        Icon(
+                                            imageVector = Icons.Filled.Link,
+                                            contentDescription = "Connect",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(text = "Connect")
                                     }
                                 }
                             }
                         }
                     }
+
 
                     if (bluetoothViewModel.devices.isEmpty()) {
                         item {
@@ -308,19 +450,39 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                                     .height(200.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = if (bluetoothViewModel.scanning.value)
-                                        "Scanning for devices..."
-                                    else
-                                        "No devices found. Press Start Scan to begin searching.",
-                                    color = Color(0xFF78909C), // Light Blue-Gray
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    if (bluetoothViewModel.scanning.value) {
+                                        CircularProgressIndicator(
+                                            color = BluetoothPrimary,
+                                            modifier = Modifier.size(48.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Filled.BluetoothSearching,
+                                            contentDescription = "No Devices",
+                                            tint = Color(0xFF78909C),
+                                            modifier = Modifier.size(48.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+                                    Text(
+                                        text = if (bluetoothViewModel.scanning.value)
+                                            "Scanning for devices..."
+                                        else
+                                            "No devices found. Press Start Scan to begin searching.",
+                                        color = Color(0xFF78909C), // Light Blue-Gray
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+
 
             // Connected Device Controls
             if (bluetoothViewModel.connected.value) {
@@ -334,25 +496,38 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                     elevation = CardDefaults.cardElevation(
                         defaultElevation = 3.dp
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(14.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         // Current values display
-                        Text(
-                            text = "Current Values",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = BluetoothPrimary,
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(bottom = 8.dp)
-                        )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = "Control Values",
+                                tint = BluetoothPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Control Values",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = BluetoothPrimary
+                            )
+                        }
+
 
                         Divider(
                             color = Color(0xFFE0E0E0), // Light Gray
                             thickness = 1.dp,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
+
 
                         LazyColumn(
                             modifier = Modifier.weight(1f),
@@ -363,55 +538,103 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                                     label = "Current:",
                                     value = currentValue,
                                     onValueChange = { currentValue = it },
-                                    currentDisplayValue = bluetoothViewModel.currentValue.value
+                                    currentDisplayValue = bluetoothViewModel.currentValue.value,
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.ElectricBolt,
+                                            contentDescription = "Current",
+                                            tint = BluetoothPrimary
+                                        )
+                                    }
                                 )
                             }
+
 
                             item {
                                 ValueControlRow(
                                     label = "Voltage:",
                                     value = voltageValue,
                                     onValueChange = { voltageValue = it },
-                                    currentDisplayValue = bluetoothViewModel.voltageValue.value
+                                    currentDisplayValue = bluetoothViewModel.voltageValue.value,
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.BatteryChargingFull,
+                                            contentDescription = "Voltage",
+                                            tint = BluetoothPrimary
+                                        )
+                                    }
                                 )
                             }
+
 
                             item {
                                 ValueControlRow(
                                     label = "Frequency:",
                                     value = frequencyValue,
                                     onValueChange = { frequencyValue = it },
-                                    currentDisplayValue = bluetoothViewModel.frequencyValue.value
+                                    currentDisplayValue = bluetoothViewModel.frequencyValue.value,
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.GraphicEq,
+                                            contentDescription = "Frequency",
+                                            tint = BluetoothPrimary
+                                        )
+                                    }
                                 )
                             }
 
+
                             item {
                                 ValueControlRow(
-                                    label = "L_Frequency:",
+                                    label = "L Frequency:",
                                     value = lFreqValue,
                                     onValueChange = { lFreqValue = it },
-                                    currentDisplayValue = bluetoothViewModel.lFreqValue.value
+                                    currentDisplayValue = bluetoothViewModel.lFreqValue.value,
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.KeyboardArrowLeft,
+                                            contentDescription = "Left Frequency",
+                                            tint = BluetoothPrimary
+                                        )
+                                    }
                                 )
                             }
 
+
                             item {
                                 ValueControlRow(
-                                    label = "R_Frequency:",
+                                    label = "R Frequency:",
                                     value = rFreqValue,
                                     onValueChange = { rFreqValue = it },
-                                    currentDisplayValue = bluetoothViewModel.rFreqValue.value
+                                    currentDisplayValue = bluetoothViewModel.rFreqValue.value,
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.KeyboardArrowRight,
+                                            contentDescription = "Right Frequency",
+                                            tint = BluetoothPrimary
+                                        )
+                                    }
                                 )
                             }
+
 
                             item {
                                 ValueControlRow(
                                     label = "Volume:",
                                     value = volumeValue,
                                     onValueChange = { volumeValue = it },
-                                    currentDisplayValue = bluetoothViewModel.volumeValue.value
+                                    currentDisplayValue = bluetoothViewModel.volumeValue.value,
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.VolumeUp,
+                                            contentDescription = "Volume",
+                                            tint = BluetoothPrimary
+                                        )
+                                    }
                                 )
                             }
                         }
+
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -419,42 +642,63 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                         Button(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = {
+                                // Create a map of values to send
+                                val valuesToSend = mutableMapOf<String, String>()
+
+                                // Update local display immediately with entered values
                                 if (currentValue.isNotEmpty()) {
-                                    bluetoothViewModel.setValue("current", currentValue)
-                                    currentValue = "" // Clear the field after sending
+                                    valuesToSend["current"] = currentValue
+                                    bluetoothViewModel.currentValue.value = currentValue // Add this line
                                 }
                                 if (voltageValue.isNotEmpty()) {
-                                    bluetoothViewModel.setValue("voltage", voltageValue)
-                                    voltageValue = "" // Clear the field after sending
+                                    valuesToSend["voltage"] = voltageValue
+                                    bluetoothViewModel.voltageValue.value = voltageValue // Add this line
                                 }
                                 if (frequencyValue.isNotEmpty()) {
-                                    bluetoothViewModel.setValue("frequency", frequencyValue)
-                                    frequencyValue = "" // Clear the field after sending
+                                    valuesToSend["frequency"] = frequencyValue
+                                    bluetoothViewModel.frequencyValue.value = frequencyValue // Add this line
                                 }
                                 if (lFreqValue.isNotEmpty()) {
-                                    bluetoothViewModel.setValue("l_freq", lFreqValue)
-                                    lFreqValue = "" // Clear the field after sending
+                                    valuesToSend["l_freq"] = lFreqValue
+                                    bluetoothViewModel.lFreqValue.value = lFreqValue // Add this line
                                 }
                                 if (rFreqValue.isNotEmpty()) {
-                                    bluetoothViewModel.setValue("r_freq", rFreqValue)
-                                    rFreqValue = "" // Clear the field after sending
+                                    valuesToSend["r_freq"] = rFreqValue
+                                    bluetoothViewModel.rFreqValue.value = rFreqValue // Add this line
                                 }
                                 if (volumeValue.isNotEmpty()) {
-                                    bluetoothViewModel.setValue("volume", volumeValue)
-                                    volumeValue = "" // Clear the field after sending
+                                    valuesToSend["volume"] = volumeValue
+                                    bluetoothViewModel.volumeValue.value = volumeValue // Add this line
+                                }
+
+                                if (valuesToSend.isNotEmpty()) {
+                                    // Send all values at once as a single JSON
+                                    bluetoothViewModel.setValue("all", "")
+
+                                    // Clear the input fields
+                                    currentValue = ""
+                                    voltageValue = ""
+                                    frequencyValue = ""
+                                    lFreqValue = ""
+                                    rFreqValue = ""
+                                    volumeValue = ""
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = BluetoothSecondary
                             ),
-                            shape = RoundedCornerShape(8.dp),
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 4.dp
-                            )
+                            // Rest of your button code remains the same
                         ) {
-                            Text("Send All Values")
+                            Icon(
+                                imageVector = Icons.Filled.Send,
+                                contentDescription = "Send",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Send All Values")
                         }
                         Spacer(modifier = Modifier.height(8.dp))
+
 
                         OutlinedButton(
                             modifier = Modifier.fillMaxWidth(),
@@ -473,29 +717,52 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = BluetoothPrimary
                             ),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(vertical = 12.dp)
                         ) {
-                            Text("Get All Values")
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = "Refresh",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Get All Values")
                         }
 
-                        // Last received data
-                        if (bluetoothViewModel.receivedData.value.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
+
+                        // Last received data with animation
+                        AnimatedVisibility(
+                            visible = bluetoothViewModel.receivedData.value.isNotEmpty(),
+                            enter = fadeIn(animationSpec = tween(300)) +
+                                    slideInVertically(animationSpec = tween(300)) { it },
+                            exit = fadeOut(animationSpec = tween(300))
+                        ) {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp),
+                                    .padding(top = 12.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color(0xFFE1F5FE) // Very Light Blue
                                 ),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(10.dp)
                             ) {
-                                Text(
-                                    text = "Last received: ${bluetoothViewModel.receivedData.value}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF0D47A1), // Dark Blue
-                                    modifier = Modifier.padding(8.dp)
-                                )
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Info,
+                                        contentDescription = "Last Received",
+                                        tint = Color(0xFF0D47A1),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Last received: ${bluetoothViewModel.receivedData.value}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF0D47A1) // Dark Blue
+                                    )
+                                }
                             }
                         }
                     }
@@ -504,3 +771,4 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
         }
     }
 }
+

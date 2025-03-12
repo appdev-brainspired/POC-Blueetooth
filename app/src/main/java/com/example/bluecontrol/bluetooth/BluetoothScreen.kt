@@ -277,24 +277,29 @@ fun BluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
                     // Single Set button
                     Button(
                         modifier = Modifier.fillMaxWidth(),
+                        // Replace the existing onClick logic
                         onClick = {
-                            if (currentValue.isNotEmpty()) {
-                                bluetoothViewModel.setValue("current", currentValue)
-                            }
-                            if (voltageValue.isNotEmpty()) {
-                                bluetoothViewModel.setValue("voltage", voltageValue)
-                            }
-                            if (frequencyValue.isNotEmpty()) {
-                                bluetoothViewModel.setValue("frequency", frequencyValue)
-                            }
-                            if (lFreqValue.isNotEmpty()) {
-                                bluetoothViewModel.setValue("l_freq", lFreqValue)
-                            }
-                            if (rFreqValue.isNotEmpty()) {
-                                bluetoothViewModel.setValue("r_freq", rFreqValue)
-                            }
-                            if (volumeValue.isNotEmpty()) {
-                                bluetoothViewModel.setValue("volume", volumeValue)
+                            // Create a map of values to send
+                            val valuesToSend = mutableMapOf<String, String>()
+
+                            if (currentValue.isNotEmpty()) valuesToSend["current"] = currentValue
+                            if (voltageValue.isNotEmpty()) valuesToSend["voltage"] = voltageValue
+                            if (frequencyValue.isNotEmpty()) valuesToSend["frequency"] = frequencyValue
+                            if (lFreqValue.isNotEmpty()) valuesToSend["l_freq"] = lFreqValue
+                            if (rFreqValue.isNotEmpty()) valuesToSend["r_freq"] = rFreqValue
+                            if (volumeValue.isNotEmpty()) valuesToSend["volume"] = volumeValue
+
+                            if (valuesToSend.isNotEmpty()) {
+                                // Send all values at once as a single JSON
+                                bluetoothViewModel.setValue("all", "")
+
+                                // Clear the input fields
+                                currentValue = ""
+                                voltageValue = ""
+                                frequencyValue = ""
+                                lFreqValue = ""
+                                rFreqValue = ""
+                                volumeValue = ""
                             }
                         }
                     ) {

@@ -245,16 +245,47 @@ class BluetoothViewModel(
         writeCharacteristic("GET $parameter")
     }
 
+
+    private fun createJsonMessage(parameter: String, value: String): String {
+        // Create a simple JSON structure
+        return when (parameter) {
+            "current" -> "{\"C\":\"$value\"}"
+            "voltage" -> "{\"V\":\"$value\"}"
+            "frequency" -> "{\"F\":\"$value\"}"
+            "l_freq" -> "{\"L\":\"$value\"}"
+            "r_freq" -> "{\"R\":\"$value\"}"
+            "volume" -> "{\"VOL\":\"$value\"}"
+            "all" -> {
+                // Create a complete JSON with all values
+                "{\"C\":\"${currentValue.value}\",\"V\":\"${voltageValue.value}\",\"F\":\"${frequencyValue.value}\",\"L\":\"${lFreqValue.value}\",\"R\":\"${rFreqValue.value}\",\"VOL\":\"${volumeValue.value}\"}"
+            }
+            else -> value // Fallback for unknown parameters
+        }
+    }
+
+
+
     fun setValue(parameter: String, value: String) {
         Log.d("BluetoothViewModel", "Setting value for $parameter: $value")
-        writeCharacteristic("SET $parameter $value")
-        when (parameter) {
-            "current" -> currentValue.value = value
-            "voltage" -> voltageValue.value = value
-            "frequency" -> frequencyValue.value = value
-            "l_freq" -> lFreqValue.value = value
-            "r_freq" -> rFreqValue.value = value
-            "volume" -> volumeValue.value = value
+
+        if (parameter == "all") {
+            // Send all values as JSON
+            writeCharacteristic(createJsonMessage("all", ""))
+            // No need to update local values here, as they are
+            // already updated in the UI when clicking Send button
+        } else {
+            // Send individual parameter as JSON
+            writeCharacteristic(createJsonMessage(parameter, value))
+
+            // Update the local state
+            when (parameter) {
+                "current" -> currentValue.value = value
+                "voltage" -> voltageValue.value = value
+                "frequency" -> frequencyValue.value = value
+                "l_freq" -> lFreqValue.value = value
+                "r_freq" -> rFreqValue.value = value
+                "volume" -> volumeValue.value = value
+            }
         }
     }
 
@@ -273,18 +304,10 @@ class BluetoothViewModel(
         }
 
         try {
-            // Extract the numeric value from the message (e.g., "SET current 15" -> "15")
-            val numericValue = message.split(" ").lastOrNull()
-
-            // Check if the numeric value exists and is a valid number
-            if (numericValue != null && numericValue.toFloatOrNull() != null) {
-                // Send the full message as a byte array (changed from only sending numeric value)
-                characteristic.value = message.toByteArray(Charsets.UTF_8)
-                val writeSuccess = thisGatt?.writeCharacteristic(characteristic) ?: false
-                Log.d("BluetoothViewModel", "Write attempt: $message, success: $writeSuccess")
-            } else {
-                Log.e("BluetoothViewModel", "Invalid numeric value in message: $message")
-            }
+            // Send the JSON message as a byte array
+            characteristic.value = message.toByteArray(Charsets.UTF_8)
+            val writeSuccess = thisGatt?.writeCharacteristic(characteristic) ?: false
+            Log.d("BluetoothViewModel", "Write attempt: $message, success: $writeSuccess")
         } catch (e: Exception) {
             Log.e("BluetoothViewModel", "Error writing characteristic", e)
         }
