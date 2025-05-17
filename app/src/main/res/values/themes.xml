@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+<<<<<<< HEAD
     <style name="Theme.BlueControl" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>
 
+=======
+    <style name="Theme.BLEDProject" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
+>>>>>>> dc661efa9c2829ecc20efe586b2ccb2f35115644

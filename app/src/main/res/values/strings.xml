@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 
 <resources>
     <string name="app_name">BlueControl</string>
+=======
+<resources>
+    <string name="app_name">BLED Project</string>
+>>>>>>> dc661efa9c2829ecc20efe586b2ccb2f35115644
     <string name="bluetoothDeviceName">bluetoothDeviceName</string>
     <string name="bluetoothDeviceAddress">bluetoothDeviceAddress</string>
 </resources>
