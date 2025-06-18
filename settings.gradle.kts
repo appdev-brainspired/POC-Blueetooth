@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BlueControl"
+rootProject.name = "GuruForm"
 include(":app")
  
